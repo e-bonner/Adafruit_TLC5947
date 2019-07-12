@@ -16,22 +16,25 @@
  ****************************************************/
 
 #include "Adafruit_TLC5947.h"
+#include <SPI.h>
 
 // How many boards do you have chained?
-#define NUM_TLC5974 1
+#define NUM_TLC5947 1
 
 #define data   4
 #define clock   5
 #define latch   6
 #define oe  -1  // set to -1 to not use the enable pin (its optional)
 
-Adafruit_TLC5947 tlc = Adafruit_TLC5947(NUM_TLC5974, clock, data, latch);
+Adafruit_TLC5947* tlc = new Adafruit_TLC5947(NUM_TLC5947, clock, data, latch); // Software
+//Adafruit_TLC5947* tlc = new Adafruit_TLC5947(NUM_TLC5947, latch); // Hardware SPI
 
 void setup() {
+  delay(5000);
   Serial.begin(9600);
   
-  Serial.println("TLC5974 test");
-  tlc.begin();
+  Serial.println("TLC5947 test");
+  tlc->begin();
   if (oe >= 0) {
     pinMode(oe, OUTPUT);
     digitalWrite(oe, LOW);
@@ -51,9 +54,9 @@ void loop() {
 
 // Fill the dots one after the other with a color
 void colorWipe(uint16_t r, uint16_t g, uint16_t b, uint8_t wait) {
-  for(uint16_t i=0; i<8*NUM_TLC5974; i++) {
-      tlc.setLED(i, r, g, b);
-      tlc.write();
+  for(uint16_t i=0; i<8*NUM_TLC5947; i++) {
+      tlc->setLED(i, r, g, b);
+      tlc->write();
       delay(wait);
   }
 }
@@ -63,10 +66,10 @@ void rainbowCycle(uint8_t wait) {
   uint32_t i, j;
 
   for(j=0; j<4096; j++) { // 1 cycle of all colors on wheel
-    for(i=0; i< 8*NUM_TLC5974; i++) {
-      Wheel(i, ((i * 4096 / (8*NUM_TLC5974)) + j) & 4095);
+    for(i=0; i< 8*NUM_TLC5947; i++) {
+      Wheel(i, ((i * 4096 / (8*NUM_TLC5947)) + j) & 4095);
     }
-    tlc.write();
+    tlc->write();
     delay(wait);
   }
 }
@@ -75,12 +78,19 @@ void rainbowCycle(uint8_t wait) {
 // The colours are a transition r - g - b - back to r.
 void Wheel(uint8_t ledn, uint16_t WheelPos) {
   if(WheelPos < 1365) {
-    tlc.setLED(ledn, 3*WheelPos, 4095 - 3*WheelPos, 0);
+    tlc->setLED(ledn, 3*WheelPos, 4095 - 3*WheelPos, 0);
   } else if(WheelPos < 2731) {
     WheelPos -= 1365;
-    tlc.setLED(ledn, 4095 - 3*WheelPos, 0, 3*WheelPos);
+    tlc->setLED(ledn, 4095 - 3*WheelPos, 0, 3*WheelPos);
   } else {
     WheelPos -= 2731;
-    tlc.setLED(ledn, 0, 3*WheelPos, 4095 - 3*WheelPos);
+    tlc->setLED(ledn, 0, 3*WheelPos, 4095 - 3*WheelPos);
   }
+}
+
+void blinkLED() {
+  digitalWrite(LED_BUILTIN, HIGH);
+  delay(2000);
+  digitalWrite(LED_BUILTIN, LOW);
+  delay(1000);
 }
