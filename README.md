@@ -11,6 +11,8 @@ Tested and works great with the Adafruit TLC5947
 These drivers uses SPI to communicate, 3 pins are required to  
 interface: Data, Clock and Latch. The boards are chainable
 
+Note that tying the output enable to latch decreases flickering.
+
 Adafruit invests time and resources providing this open source code, please support Adafruit and open-source hardware by purchasing products from Adafruit!
 
 Written by Limor Fried/Ladyada for Adafruit Industries.  
