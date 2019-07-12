@@ -107,19 +107,8 @@ void Adafruit_TLC5947::write() {
     } else {
       // 12 bits per channel, write MSB first into spibuffer
       for (int8_t b = 11; b >= 0; b--) {
-        if (pwmbuffer[c] & (1 << b)) {
-          /*Serial.print("byte: ");
-          Serial.print(bit / 8);
-          Serial.print(" bit: ");
-          Serial.print(bit % 8);
-          Serial.print(" apply value: ");
-          Serial.print(0x80 >> (bit % 8));
-          Serial.print(" current value: ");
-          Serial.print(spibuffer[bit / 8]);
-          Serial.print(" final value: ");
-          Serial.println(spibuffer[bit / 8] | (0x80 >> (bit % 8)));*/
+        if (pwmbuffer[c] & (1 << b))
           spibuffer[bit / 8] |= (0x80 >> (bit % 8));
-        }
           
         bit++;
       }
