@@ -22,6 +22,7 @@
 #define _ADAFRUIT_TLC5947_H
 
 #include <Arduino.h>
+#include <SPI.h>
 
 /*!
  *    @brief  Class that stores state and functions for interacting with
@@ -29,7 +30,8 @@
  */
 class Adafruit_TLC5947 {
 public:
-  Adafruit_TLC5947(uint16_t n, uint8_t c, uint8_t d, uint8_t l);
+  Adafruit_TLC5947(uint16_t n, int8_t c, int8_t d, int8_t l);
+  Adafruit_TLC5947(uint16_t n, int8_t l, SPIClass *theSPI = &SPI);
 
   boolean begin(void);
 
@@ -39,9 +41,11 @@ public:
 
 private:
   uint16_t *pwmbuffer;
+  uint8_t *spibuffer;
 
   uint16_t numdrivers;
-  uint8_t _clk, _dat, _lat;
+  int8_t _clk, _dat, _lat;
+  SPIClass *_spi;
 };
 
 #endif

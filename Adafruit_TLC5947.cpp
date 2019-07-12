@@ -28,6 +28,10 @@
  */
 
 #include <Adafruit_TLC5947.h>
+#include <SPI.h>
+
+// TLC5947 datasheet says can go up to 30 MHz for single board, see page 3
+SPISettings SPI_SETTINGS(5000000, MSBFIRST, SPI_MODE0);
 
 /*!
  *    @brief  Instantiates a new TLC5947 class
@@ -40,8 +44,8 @@
  *    @param  l
  *            Arduino pin connected to TLC5947 latch pin
  */
-Adafruit_TLC5947::Adafruit_TLC5947(uint16_t n, uint8_t c, uint8_t d,
-                                   uint8_t l) {
+Adafruit_TLC5947::Adafruit_TLC5947(uint16_t n, int8_t c, int8_t d,
+                                   int8_t l) {
   numdrivers = n;
   _clk = c;
   _dat = d;
@@ -51,27 +55,83 @@ Adafruit_TLC5947::Adafruit_TLC5947(uint16_t n, uint8_t c, uint8_t d,
   memset(pwmbuffer, 0, 2 * 24 * n);
 }
 
+/*!
+ *    @brief  Instantiates a new TLC5947 class
+ *    @param  n
+ *            num of drivers (boards)
+ *    @param  l
+ *            Arduino pin connected to TLC5947 latch pin
+ *    @param  *theSPI
+ *            spi object
+ */
+Adafruit_TLC5947::Adafruit_TLC5947(uint16_t n, int8_t l, SPIClass *theSPI = &SPI) {
+  numdrivers = n;
+  _clk = -1;
+  _dat = -1;
+  _lat = l;
+  _spi = theSPI;
+
+  pwmbuffer = (uint16_t *)malloc(2 * 24 * n);
+  memset(pwmbuffer, 0, 2 * 24 * n);
+  // pwmbuffer array has 2 bytes per channel, need to send 12 bits over SPI
+  spibuffer = (uint8_t *)malloc(2 * 24 * n / 4 * 3);
+}
+
 
 /*!
  *    @brief  Writes PWM data to the all connected TLC5947 boards
  */
 void Adafruit_TLC5947::write() {
+  uint16_t bit; // Used to iterate through spibuffer bits, starts high
+  if (_clk < 0) {
+    memset(spibuffer, 0, 2 * 24 * numdrivers / 4 * 3);
+    bit = 0;
+  }
+
   digitalWrite(_lat, LOW);
   // 24 channels per TLC5974
   for (int16_t c = 24 * numdrivers - 1; c >= 0; c--) {
-    // 12 bits per channel, send MSB first
-    for (int8_t b = 11; b >= 0; b--) {
-      digitalWrite(_clk, LOW);
+    if (_clk >= 0) {
+      // 12 bits per channel, send MSB first
+      for (int8_t b = 11; b >= 0; b--) {
+        digitalWrite(_clk, LOW);
 
-      if (pwmbuffer[c] & (1 << b))
-        digitalWrite(_dat, HIGH);
-      else
-        digitalWrite(_dat, LOW);
-
-      digitalWrite(_clk, HIGH);
+        if (pwmbuffer[c] & (1 << b)) {
+          digitalWrite(_dat, HIGH);
+        } else {
+          digitalWrite(_dat, LOW);
+        }
+          
+        digitalWrite(_clk, HIGH);
+      }
+    } else {
+      // 12 bits per channel, write MSB first into spibuffer
+      for (int8_t b = 11; b >= 0; b--) {
+        if (pwmbuffer[c] & (1 << b)) {
+          /*Serial.print("byte: ");
+          Serial.print(bit / 8);
+          Serial.print(" bit: ");
+          Serial.print(bit % 8);
+          Serial.print(" apply value: ");
+          Serial.print(0x80 >> (bit % 8));
+          Serial.print(" current value: ");
+          Serial.print(spibuffer[bit / 8]);
+          Serial.print(" final value: ");
+          Serial.println(spibuffer[bit / 8] | (0x80 >> (bit % 8)));*/
+          spibuffer[bit / 8] |= (0x80 >> (bit % 8));
+        }
+          
+        bit++;
+      }
     }
   }
-  digitalWrite(_clk, LOW);
+  if (_clk >= 0) {
+    digitalWrite(_clk, LOW);
+  } else {
+    _spi->beginTransaction(SPI_SETTINGS);
+    _spi->transfer(spibuffer, 2 * 24 * numdrivers / 4 * 3);
+    _spi->endTransaction();
+  }
 
   digitalWrite(_lat, HIGH);
   digitalWrite(_lat, LOW);
@@ -118,8 +178,12 @@ boolean Adafruit_TLC5947::begin() {
   if (!pwmbuffer)
     return false;
 
-  pinMode(_clk, OUTPUT);
-  pinMode(_dat, OUTPUT);
+  if (_clk >= 0) {
+    pinMode(_clk, OUTPUT);
+    pinMode(_dat, OUTPUT);
+  } else {
+    _spi->begin();
+  }
   pinMode(_lat, OUTPUT);
   digitalWrite(_lat, LOW);
 
