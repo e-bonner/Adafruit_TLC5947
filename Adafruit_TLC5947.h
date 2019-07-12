@@ -32,6 +32,7 @@ class Adafruit_TLC5947 {
 public:
   Adafruit_TLC5947(uint16_t n, int8_t c, int8_t d, int8_t l);
   Adafruit_TLC5947(uint16_t n, int8_t l, SPIClass *theSPI = &SPI);
+  ~Adafruit_TLC5947();
 
   boolean begin(void);
 

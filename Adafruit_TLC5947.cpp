@@ -77,6 +77,13 @@ Adafruit_TLC5947::Adafruit_TLC5947(uint16_t n, int8_t l, SPIClass *theSPI = &SPI
   spibuffer = (uint8_t *)malloc(2 * 24 * n / 4 * 3);
 }
 
+Adafruit_TLC5947::~Adafruit_TLC5947() {
+  if (pwmbuffer)
+    free(pwmbuffer);
+  if (spibuffer)
+    free(spibuffer);
+}
+
 
 /*!
  *    @brief  Writes PWM data to the all connected TLC5947 boards
