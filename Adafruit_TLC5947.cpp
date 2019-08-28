@@ -27,7 +27,7 @@
  *     v1.0 - First release
  */
 
-#include <Adafruit_TLC5947.h>
+#include "Adafruit_TLC5947.h"
 #include <SPI.h>
 
 // TLC5947 datasheet says can go up to 30 MHz for single board, see page 3
